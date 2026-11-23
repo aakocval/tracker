@@ -3,37 +3,116 @@
 //  Tracker
 //
 
+import CoreLocation
 import Foundation
 
 @Observable
 final class HomeViewModel: HomeViewModelProtocol {
-  var isShowingInfo = false
+    var isTracking = false
+    var currentLocation: CLLocation?
+    var route: [CLLocationCoordinate2D] = []
+
+    private var authorizationStatus: CLAuthorizationStatus
+    private var trackingTask: Task<Void, Never>?
+
+    private let locationService: LocationServiceProtocol
+
+    init(locationService: LocationServiceProtocol) {
+        self.locationService = locationService
+        self.authorizationStatus = locationService.authorizationStatus
+    }
 }
 
 // MARK: - Methods
 
 extension HomeViewModel {
-  func primaryButtonTapped() {
-    isShowingInfo = true
-  }
+    func refreshAuthorizationStatus() {
+        authorizationStatus = locationService.authorizationStatus
+    }
 
-  func infoDismissed() {
-    isShowingInfo = false
-  }
+    func trackingButtonTapped() {
+        if isTracking {
+            stopTracking()
+        } else {
+            startTracking()
+        }
+    }
+
+    func startTracking() {
+        currentLocation = nil
+        route = []
+        isTracking = true
+
+        let events = locationService.locationEvents()
+        trackingTask = Task { [weak self] in
+            for await event in events {
+                guard let self else { return }
+
+                self.handle(event)
+            }
+        }
+    }
+
+    func stopTracking() {
+        trackingTask?.cancel()
+        trackingTask = nil
+        locationService.stopUpdates()
+        isTracking = false
+    }
+}
+
+// MARK: - Event Handling
+
+private extension HomeViewModel {
+    func handle(_ event: LocationEvent) {
+        switch event {
+            case let .location(location):
+                handleLocation(location)
+
+            case .authorizationDenied:
+                authorizationStatus = .denied
+                stopTracking()
+        }
+    }
+
+    func handleLocation(_ location: CLLocation) {
+        currentLocation = location
+
+        route.append(location.coordinate)
+    }
 }
 
 // MARK: - Computed Properties
 
 extension HomeViewModel {
-  var title: String {
-    "Tracker"
-  }
+    var isLocationDenied: Bool {
+        authorizationStatus == .denied || authorizationStatus == .restricted
+    }
 
-  var message: String {
-    "Your delivery tracker starts here."
-  }
+    var status: TrackingStatus {
+        if isLocationDenied { return .locationOff }
+        return isTracking ? .tracking : .idle
+    }
 
-  var primaryButtonTitle: String {
-    "Get Started"
-  }
+    var statusText: String {
+        switch status {
+            case .idle: "Idle"
+            case .tracking: "Tracking"
+            case .locationOff: "Location off"
+        }
+    }
+
+    var latitudeText: String {
+        guard let currentLocation else { return "—" }
+        return String(format: "%.6f°", currentLocation.coordinate.latitude)
+    }
+
+    var longitudeText: String {
+        guard let currentLocation else { return "—" }
+        return String(format: "%.6f°", currentLocation.coordinate.longitude)
+    }
+
+    var trackingButtonTitle: String {
+        isTracking ? "Stop Tracking" : "Start Tracking"
+    }
 }

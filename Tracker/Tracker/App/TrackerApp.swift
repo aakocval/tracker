@@ -7,13 +7,13 @@ import SwiftUI
 
 @main
 struct TrackerApp: App {
-  @State private var viewModel = HomeViewModel()
+    @State private var viewModel = HomeViewModel(locationService: LocationService())
 
-  var body: some Scene {
-    WindowGroup {
-      NavigationStack {
-        HomeSUView(viewModel: viewModel)
-      }
+    var body: some Scene {
+        WindowGroup {
+            NavigationStack {
+                HomeView(viewModel: viewModel)
+            }
+        }
     }
-  }
 }
