@@ -15,6 +15,7 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     private var authorizationStatus: CLAuthorizationStatus
     private var trackingTask: Task<Void, Never>?
+    private var distanceTracker: DistanceTracker?
 
     private let locationService: LocationServiceProtocol
 
@@ -54,6 +55,7 @@ extension HomeViewModel {
         currentLocation = nil
         route = []
         isTracking = true
+        distanceTracker = DistanceTracker()
 
         let events = locationService.locationEvents()
         trackingTask = Task { [weak self] in
@@ -93,7 +95,14 @@ private extension HomeViewModel {
     func handleLocation(_ location: CLLocation) {
         currentLocation = location
 
-        route.append(location.coordinate)
+        // Only locations that count towards the distance are drawn on the map.
+        switch distanceTracker?.add(location) {
+        case .started, .added:
+          route.append(location.coordinate)
+
+        case .ignored, nil:
+          break
+        }
     }
 }
 
@@ -129,5 +138,15 @@ extension HomeViewModel {
 
     var trackingButtonTitle: String {
         isTracking ? "Stop Tracking" : "Start Tracking"
+    }
+
+    var distance: CLLocationDistance {
+        distanceTracker?.totalDistance ?? 0
+    }
+
+    var distanceText: String {
+        distance.rounded() < 1_000
+          ? String(format: "%.0f m", distance)
+          : String(format: "%.2f km", distance / 1_000)
     }
 }

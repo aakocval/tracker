@@ -16,6 +16,7 @@ struct HomeView<ViewModel: HomeViewModelProtocol>: View {
             VStack(spacing: Spacing.md) {
                 bannerView()
                 mapCardView()
+                distanceCardView()
                 locationCardView()
             }
             .padding(.horizontal, Spacing.lg)
@@ -84,6 +85,23 @@ private extension HomeView {
                         .padding(Spacing.md)
                 }
             }
+    }
+
+    func distanceCardView() -> some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("Distance this session")
+                .textStyle(.footnoteSemiboldUpper)
+                .foregroundStyle(Color.textTertiary)
+
+            Text(viewModel.distanceText)
+                .textStyle(.display)
+                .foregroundStyle(Color.textPrimary)
+                .monospacedDigit()
+                .animation(.default, value: viewModel.distanceText)
+        }
+        .padding(Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.surfacesBackground2, in: RoundedRectangle(cornerRadius: Radius.lg))
     }
 
     func locationCardView() -> some View {
