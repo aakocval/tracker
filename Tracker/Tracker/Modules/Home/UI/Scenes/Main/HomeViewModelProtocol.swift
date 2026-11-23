@@ -8,6 +8,8 @@ import Observation
 
 /// `AnyObject` + `Observable` so `HomeSUView` can use `@Bindable`.
 protocol HomeViewModelProtocol: AnyObject, Observable {
+    var isShowingLocationDenied: Bool { get set }
+
     var isTracking: Bool { get }
     var isLocationDenied: Bool { get }
     var status: TrackingStatus { get }
@@ -20,4 +22,5 @@ protocol HomeViewModelProtocol: AnyObject, Observable {
 
     func refreshAuthorizationStatus()
     func trackingButtonTapped()
+    func turnOnLocationTapped()
 }

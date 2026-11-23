@@ -8,9 +8,13 @@ import SwiftUI
 struct HomeView<ViewModel: HomeViewModelProtocol>: View {
     @Bindable var viewModel: ViewModel
 
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.md) {
+                bannerView()
                 mapCardView()
                 locationCardView()
             }
@@ -28,7 +32,18 @@ struct HomeView<ViewModel: HomeViewModelProtocol>: View {
                     .fixedSize()
             }
         }
+        .sheet(isPresented: $viewModel.isShowingLocationDenied) {
+            LocationDeniedView(
+                onOpenSettings: openAppSettings,
+                onDismiss: { viewModel.isShowingLocationDenied = false }
+            )
+            .presentationDetents([.fraction(0.75), .medium])
+        }
         .onAppear {
+            viewModel.refreshAuthorizationStatus()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
             viewModel.refreshAuthorizationStatus()
         }
     }
@@ -37,6 +52,22 @@ struct HomeView<ViewModel: HomeViewModelProtocol>: View {
 // MARK: - Sections
 
 private extension HomeView {
+    @ViewBuilder
+    func bannerView() -> some View {
+        if viewModel.isLocationDenied {
+            TrackingBannerView(
+                systemImage: "location.slash.fill",
+                title: "Location access is off",
+                message: "Tracker can’t measure your delivery distance without it.",
+                tint: .semanticsErrorDark,
+                background: .semanticsErrorShade,
+                actionTitle: "How to turn it on",
+                actionColor: .semanticsErrorText,
+                action: viewModel.turnOnLocationTapped
+            )
+        }
+    }
+
     func mapCardView() -> some View {
         RouteMapView(route: viewModel.route, currentLocation: viewModel.currentLocation)
             .frame(height: 260)
@@ -90,6 +121,12 @@ private extension HomeView {
 // MARK: - Helpers
 
 private extension HomeView {
+    func openAppSettings() {
+        viewModel.isShowingLocationDenied = false
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        openURL(url)
+    }
+
     func locationRowView(
         _ title: String,
         value: String

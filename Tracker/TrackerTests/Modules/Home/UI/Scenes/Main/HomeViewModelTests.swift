@@ -8,29 +8,29 @@ import Testing
 
 @MainActor
 struct HomeViewModelTests {
-  @Test
-  func startsWithInfoHidden() {
-    let viewModel = HomeViewModel()
+    @Test
+    func startsWithInfoHidden() {
+        let viewModel = HomeViewModel()
 
-    #expect(viewModel.isShowingInfo == false)
-  }
+        #expect(viewModel.isShowingInfo == false)
+    }
 
-  @Test
-  func primaryButtonShowsInfo() {
-    let viewModel = HomeViewModel()
+    @Test
+    func primaryButtonShowsInfo() {
+        let viewModel = HomeViewModel()
 
-    viewModel.primaryButtonTapped()
+        viewModel.primaryButtonTapped()
 
-    #expect(viewModel.isShowingInfo)
-  }
+        #expect(viewModel.isShowingInfo)
+    }
 
-  @Test
-  func infoDismissedHidesInfo() {
-    let viewModel = HomeViewModel()
-    viewModel.primaryButtonTapped()
+    @Test
+    func infoDismissedHidesInfo() {
+        let viewModel = HomeViewModel()
+        viewModel.primaryButtonTapped()
 
-    viewModel.infoDismissed()
+        viewModel.infoDismissed()
 
-    #expect(viewModel.isShowingInfo == false)
-  }
+        #expect(viewModel.isShowingInfo == false)
+    }
 }

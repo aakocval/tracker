@@ -9,6 +9,7 @@ import Foundation
 @Observable
 final class HomeViewModel: HomeViewModelProtocol {
     var isTracking = false
+    var isShowingLocationDenied = false
     var currentLocation: CLLocation?
     var route: [CLLocationCoordinate2D] = []
 
@@ -38,7 +39,18 @@ extension HomeViewModel {
         }
     }
 
+    func turnOnLocationTapped() {
+        isShowingLocationDenied = true
+    }
+
     func startTracking() {
+        guard !isTracking else { return }
+
+        guard !isLocationDenied else {
+            isShowingLocationDenied = true
+            return
+        }
+
         currentLocation = nil
         route = []
         isTracking = true
@@ -54,6 +66,8 @@ extension HomeViewModel {
     }
 
     func stopTracking() {
+        guard isTracking else { return }
+
         trackingTask?.cancel()
         trackingTask = nil
         locationService.stopUpdates()
@@ -72,6 +86,7 @@ private extension HomeViewModel {
             case .authorizationDenied:
                 authorizationStatus = .denied
                 stopTracking()
+                isShowingLocationDenied = true
         }
     }
 
