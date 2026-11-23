@@ -1,0 +1,51 @@
+disabled_rules: # rule identifiers to exclude from running
+  - force_try
+  # By default, this limits us to a minimum of 3 characters.
+  # But I think it's practical using 1 char at times when in a short block statement.
+  - identifier_name
+  - todo
+  - trailing_comma
+  - trailing_whitespace
+  - type_body_length
+# These are paths to ignore during linting. Takes precedence over `included`.
+excluded:
+  - Pods
+  - Vendors
+  - Tracker/TrackerTests
+  - Tracker/TrackerUITests
+# These are paths to include during linting. `--path` is ignored if present.
+included:
+  - Tracker/Tracker
+
+# configurable rules can be customized from this configuration file
+# binary rules can set their severity level
+force_cast: warning
+#identifier_name:
+#  excluded:
+#    - id
+line_length:
+  ignores_comments: true
+  warning: 120
+  error: 180
+vertical_whitespace:
+  max_empty_lines: 2
+
+custom_rules:
+  weakified_self:
+    included: ".*\\.swift"
+    name: "Weakified self"
+    regex: "(guard\\s+let +)(?!self)[^=]+(= *self([,\\s]|\\s+else)+)"
+    capture_group: 0
+    message: "Not following standards. Use `guard let self = self`"
+    severity: error
+  #
+  # Uncomment rule below to for Theming evaluation. Don't leave it uncommented as it is not perfect.
+  #
+  # use_theme_color:
+  #   included: ".*\\.swift"
+  #   name: "Use theme color"
+  #   regex: "(R\\.color|[:=] *((UIColor)?\\.(alizarin|amethyst|asbestos|belizeHole|black|blue|brown|carrot|clouds|concrete|cyan|darkClouds|darkGray|darkText|emerald|gray|green|greenSea|label|lightGray|lightText|link|magenta|midnightBlue|nephritis|opaqueSeparator|orange|peterRiver|placeholderText|pomegranate|pumpkin|purple|quaternaryLabel|quaternarySystemFill|red|secondaryLabel|secondarySystemBackground|secondarySystemFill|secondarySystemGroupedBackground|separator|silver|skeletonDefault|sunFlower|systemBackground|systemBlue|systemFill|systemGray|systemGray2|systemGray3|systemGray4|systemGray5|systemGray6|systemGroupedBackground|systemIndigo|systemBlue|systemOrange|systemPink|systemPurple|systemRed|systemTeal|systemYellow|tertiaryLabel|tertiarySystemBackground|tertiarySystemFill|tertiarySystemGroupedBackground|turquoise|wetAsphalt|white|wisteria|yellow)))"
+  #   capture_group: 0
+  #   message: "Not following standards. Use colors from T.color"
+  #   severity: error
+
