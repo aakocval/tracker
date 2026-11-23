@@ -38,7 +38,7 @@
 --hexliteralcase uppercase
 --ifdef indent
 --importgrouping alpha
---indent 2
+--indent 4
 --indentcase false
 --indentstrings false
 --initcodernil false
@@ -71,7 +71,7 @@
 --storedvarattrs preserve
 --stripunusedargs closure-only
 --structthreshold 0
---tabwidth 2
+--tabwidth 4
 --throwcapturing 
 --timezone system
 --trailingclosures 
