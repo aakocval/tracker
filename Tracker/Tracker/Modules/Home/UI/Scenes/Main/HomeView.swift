@@ -98,6 +98,36 @@ private extension HomeView {
                 .foregroundStyle(Color.textPrimary)
                 .monospacedDigit()
                 .animation(.default, value: viewModel.distanceText)
+
+            Divider()
+                .overlay(Color.bordersDefault)
+
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Speed")
+                        .textStyle(.footnoteRegular)
+                        .foregroundStyle(Color.textTertiary)
+
+                    Text(viewModel.speedText)
+                        .textStyle(.title3)
+                        .foregroundStyle(Color.textPrimary)
+                        .monospacedDigit()
+
+                    if let speedThresholdText = viewModel.speedThresholdText {
+                        Text(speedThresholdText)
+                            .textStyle(.captionSemibold)
+                            .foregroundStyle(Color.semanticsWarningDefault)
+                    }
+                }
+
+                Spacer()
+
+                ActivityBadgeView(
+                    text: viewModel.activityText,
+                    symbolName: viewModel.activitySymbolName,
+                    activity: viewModel.activity
+                )
+            }
         }
         .padding(Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)

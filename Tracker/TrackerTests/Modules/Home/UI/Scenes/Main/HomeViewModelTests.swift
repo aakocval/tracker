@@ -198,4 +198,144 @@ struct HomeViewModelTests {
         #expect(sut.distanceText == "0 m")
         #expect(sut.route.isEmpty)
     }
+
+    // MARK: Speed
+
+    @Test("shows a dash for speed until there's one")
+    func showsDashForSpeedUntilThereIsOne() async {
+        let sut = makeSUT()
+        #expect(sut.speedText == "—")
+
+        locationService.events = [.location(.test(at: 1))]
+        await startTracking(sut)
+
+        #expect(sut.speedText == "—")
+    }
+
+    @Test("shows the reported speed in km/h")
+    func showsReportedSpeedInKilometresPerHour() async {
+        // 12.5 m/s is 45 km/h.
+        locationService.events = [.location(.test(speed: 12.5, at: 1))]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.speedText == "45.0 km/h")
+    }
+
+    @Test("stopping clears the speed")
+    func stoppingClearsTheSpeed() async {
+        locationService.events = [.location(.test(speed: 12.5, at: 1))]
+        let sut = makeSUT()
+        await startTracking(sut)
+
+        sut.trackingButtonTapped()
+
+        #expect(sut.speedText == "—")
+        #expect(sut.speedThresholdText == nil)
+    }
+
+    @Test("shows Over 10 km/h only when moving faster than 10 km/h", arguments: [
+        (speed: 1.4, text: String?.none),
+        (speed: 10 / 3.6, text: String?.none),
+        (speed: 2.8, text: "Over 10 km/h"),
+        (speed: 15.0, text: "Over 10 km/h")
+    ])
+    func showsOverThresholdText(
+        speed: CLLocationSpeed,
+        text: String?
+    ) async {
+        locationService.events = [.location(.test(speed: speed, at: 1))]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.speedThresholdText == text)
+    }
+
+    @Test("shows no threshold text before there's a speed")
+    func showsNoThresholdTextWithoutSpeed() {
+        let sut = makeSUT()
+
+        #expect(sut.speedThresholdText == nil)
+    }
+
+    // MARK: Activity
+
+    @Test("shows Not tracking with no symbol before tracking starts")
+    func showsNotTrackingWhenIdle() {
+        let sut = makeSUT()
+
+        #expect(sut.activity == .none)
+        #expect(sut.activityText == "Not tracking")
+        #expect(sut.activitySymbolName == nil)
+    }
+
+    @Test("shows a dash while tracking until there's a speed")
+    func showsDashUntilThereIsASpeed() async {
+        // One reading with no reported speed, so there's nothing to work it out from yet.
+        locationService.events = [.location(.test(at: 1))]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.activity == .none)
+        #expect(sut.activityText == "—")
+        #expect(sut.activitySymbolName == nil)
+    }
+
+    @Test("shows Walking at or below 10 km/h and Driving above it", arguments: [
+        (speed: 1.4, activity: TrackingActivity.walking, text: "Walking", symbol: "figure.walk"),
+        (speed: 10 / 3.6, activity: .walking, text: "Walking", symbol: "figure.walk"),
+        (speed: 2.8, activity: .driving, text: "Driving", symbol: "car.fill"),
+        (speed: 15.0, activity: .driving, text: "Driving", symbol: "car.fill")
+    ])
+    func showsWalkingOrDriving(
+        speed: CLLocationSpeed,
+        activity: TrackingActivity,
+        text: String,
+        symbol: String
+    ) async {
+        locationService.events = [.location(.test(speed: speed, at: 1))]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.activity == activity)
+        #expect(sut.activityText == text)
+        #expect(sut.activitySymbolName == symbol)
+    }
+
+    @Test("works out speed from the last two updates when the device reports none", arguments: [
+        (metres: 14.0, activity: TrackingActivity.walking),
+        (metres: 150.0, activity: .driving)
+    ])
+    func worksOutSpeedWhenDeviceReportsNone(
+        metres: CLLocationDistance,
+        activity: TrackingActivity
+    ) async {
+        // 10 seconds apart: 14 m is about 5 km/h, 150 m is about 54 km/h.
+        locationService.events = [
+            .location(.test(north: 0, at: 1)),
+            .location(.test(north: metres, at: 11))
+        ]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.activity == activity)
+    }
+
+    @Test("stopping clears the activity")
+    func stoppingClearsTheActivity() async {
+        locationService.events = [.location(.test(speed: 15, at: 1))]
+        let sut = makeSUT()
+        await startTracking(sut)
+
+        sut.trackingButtonTapped()
+
+        #expect(sut.speed == nil)
+        #expect(sut.activity == .none)
+        #expect(sut.activityText == "Not tracking")
+    }
 }

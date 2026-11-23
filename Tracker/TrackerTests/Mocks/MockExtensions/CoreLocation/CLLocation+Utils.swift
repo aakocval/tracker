@@ -14,6 +14,7 @@ extension CLLocation {
         north: CLLocationDistance = 0,
         east: CLLocationDistance = 0,
         accuracy: CLLocationAccuracy = 5,
+        speed: CLLocationSpeed = -1,
         at seconds: TimeInterval
     ) -> CLLocation {
         let metresPerDegree = 111_320.0
@@ -26,7 +27,7 @@ extension CLLocation {
             horizontalAccuracy: accuracy,
             verticalAccuracy: -1,
             course: -1,
-            speed: -1,
+            speed: speed,
             timestamp: testStartDate.addingTimeInterval(seconds)
         )
     }

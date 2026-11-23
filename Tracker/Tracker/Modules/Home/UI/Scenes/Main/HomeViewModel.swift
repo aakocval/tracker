@@ -15,9 +15,11 @@ final class HomeViewModel: HomeViewModelProtocol {
 
     /// Kept so tests can wait for the updates they sent to be handled.
     private(set) var trackingTask: Task<Void, Never>?
+    private(set) var speed: CLLocationSpeed?
 
     private var authorizationStatus: CLAuthorizationStatus
     private var distanceTracker: DistanceTracker?
+    private var previousLocation: CLLocation?
 
     private let locationService: LocationServiceProtocol
     private let now: EmptyResult<Date>
@@ -60,6 +62,8 @@ extension HomeViewModel {
         }
 
         currentLocation = nil
+        previousLocation = nil
+        speed = nil
         route = []
         isTracking = true
         distanceTracker = DistanceTracker(startDate: now())
@@ -81,6 +85,7 @@ extension HomeViewModel {
         trackingTask = nil
         locationService.stopUpdates()
         isTracking = false
+        speed = nil
     }
 }
 
@@ -101,6 +106,8 @@ private extension HomeViewModel {
 
     func handleLocation(_ location: CLLocation) {
         currentLocation = location
+        speed = speed(of: location)
+        previousLocation = location
 
         // Only locations that count towards the distance are drawn on the map.
         switch distanceTracker?.add(location) {
@@ -113,9 +120,64 @@ private extension HomeViewModel {
     }
 }
 
+// MARK: - Helpers
+
+private extension HomeViewModel {
+    /// Works out speed from the previous update when the device reports none, e.g. in GPX simulation.
+    func speed(of location: CLLocation) -> CLLocationSpeed? {
+        // Core Location reports -1 when the speed is invalid.
+        guard location.speed < 0 else { return location.speed }
+        guard let previousLocation else { return nil }
+
+        let seconds = location.timestamp.timeIntervalSince(previousLocation.timestamp)
+        guard seconds > 0 else { return speed }
+
+        return location.distance(from: previousLocation) / seconds
+    }
+}
+
 // MARK: - Computed Properties
 
 extension HomeViewModel {
+    /// 10 km/h in metres per second.
+    static let drivingSpeedThreshold: CLLocationSpeed = 10 / 3.6
+
+    var isDriving: Bool {
+        guard let speed else { return false }
+        return speed > Self.drivingSpeedThreshold
+    }
+
+    var speedText: String {
+        guard let speed else { return "—" }
+        return String(format: "%.1f km/h", speed * 3.6)
+    }
+
+    /// Only shown while moving faster than the driving threshold.
+    var speedThresholdText: String? {
+        isDriving ? "Over 10 km/h" : nil
+    }
+
+    var activity: TrackingActivity {
+        guard isTracking, speed != nil else { return .none }
+        return isDriving ? .driving : .walking
+    }
+
+    var activityText: String {
+        switch activity {
+        case .none: isTracking ? "—" : "Not tracking"
+        case .walking: "Walking"
+        case .driving: "Driving"
+        }
+    }
+
+    var activitySymbolName: String? {
+        switch activity {
+        case .none: nil
+        case .walking: "figure.walk"
+        case .driving: "car.fill"
+        }
+    }
+
     var isLocationDenied: Bool {
         authorizationStatus == .denied || authorizationStatus == .restricted
     }

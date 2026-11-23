@@ -20,6 +20,11 @@ protocol HomeViewModelProtocol: AnyObject, Observable {
     var route: [CLLocationCoordinate2D] { get }
     var currentLocation: CLLocation? { get }
     var distanceText: String { get }
+    var speedText: String { get }
+    var speedThresholdText: String? { get }
+    var activity: TrackingActivity { get }
+    var activityText: String { get }
+    var activitySymbolName: String? { get }
 
     func refreshAuthorizationStatus()
     func trackingButtonTapped()
