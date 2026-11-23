@@ -13,14 +13,21 @@ final class HomeViewModel: HomeViewModelProtocol {
     var currentLocation: CLLocation?
     var route: [CLLocationCoordinate2D] = []
 
+    /// Kept so tests can wait for the updates they sent to be handled.
+    private(set) var trackingTask: Task<Void, Never>?
+
     private var authorizationStatus: CLAuthorizationStatus
-    private var trackingTask: Task<Void, Never>?
     private var distanceTracker: DistanceTracker?
 
     private let locationService: LocationServiceProtocol
+    private let now: EmptyResult<Date>
 
-    init(locationService: LocationServiceProtocol) {
+    init(
+        locationService: LocationServiceProtocol,
+        now: @escaping EmptyResult<Date> = Date.init
+    ) {
         self.locationService = locationService
+        self.now = now
         self.authorizationStatus = locationService.authorizationStatus
     }
 }
@@ -55,7 +62,7 @@ extension HomeViewModel {
         currentLocation = nil
         route = []
         isTracking = true
-        distanceTracker = DistanceTracker()
+        distanceTracker = DistanceTracker(startDate: now())
 
         let events = locationService.locationEvents()
         trackingTask = Task { [weak self] in
