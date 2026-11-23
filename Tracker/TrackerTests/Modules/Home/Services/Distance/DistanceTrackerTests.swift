@@ -134,6 +134,18 @@ struct DistanceTrackerTests {
         #expect(sut.lastLocation == nil)
     }
 
+    @Test("reports an old cached location as before the session, even when its accuracy is low", arguments: [
+        CLLocationAccuracy(65),
+        -1
+    ])
+    func reportsCachedLocationAsBeforeSessionWhateverItsAccuracy(accuracy: CLLocationAccuracy) {
+        var sut = makeSUT()
+
+        let outcome = sut.add(.test(accuracy: accuracy, at: -60))
+
+        #expect(outcome == .ignored(.beforeSessionStart))
+    }
+
     @Test("ignores locations that arrive out of order")
     func ignoresLocationsThatArriveOutOfOrder() {
         var sut = makeSUT()

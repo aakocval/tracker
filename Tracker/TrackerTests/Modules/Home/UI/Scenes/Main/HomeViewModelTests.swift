@@ -197,6 +197,55 @@ struct HomeViewModelTests {
 
         #expect(sut.distanceText == "0 m")
         #expect(sut.route.isEmpty)
+        #expect(sut.currentLocation == nil)
+    }
+
+    @Test("a cached location from the previous trip doesn't set location, speed or activity", arguments: [
+        CLLocationAccuracy(5),
+        65
+    ])
+    func cachedLocationFromPreviousTripIsIgnored(accuracy: CLLocationAccuracy) async {
+        // The end of an earlier drive at about 100 km/h, sent again when updates start.
+        // Real cached fixes often have poor accuracy, so both cases must be ignored.
+        locationService.events = [.location(.test(north: 5_000, accuracy: accuracy, speed: 28, at: -60))]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.currentLocation == nil)
+        #expect(sut.latitudeText == "—")
+        #expect(sut.speedText == "—")
+        #expect(sut.speedThresholdText == nil)
+        #expect(sut.activity == .none)
+        #expect(sut.activityText == "—")
+        #expect(sut.distanceText == "0 m")
+        #expect(sut.route.isEmpty)
+    }
+
+    @Test("restarting after a drive starts fresh even if the old location is sent again")
+    func restartingAfterADriveStartsFresh() async {
+        let lastDrivePoint = CLLocation.test(north: 1_000, speed: 28, at: 40)
+        locationService.events = [
+            .location(.test(north: 0, speed: 28, at: 1)),
+            .location(lastDrivePoint)
+        ]
+        var clock = CLLocation.testStartDate
+        let sut = HomeViewModel(locationService: locationService, now: { clock })
+        await startTracking(sut)
+        #expect(sut.activity == .driving)
+        sut.trackingButtonTapped()
+
+        // Restart later with the location set to None; Core Location only sends the cached end of the drive.
+        clock = CLLocation.testStartDate.addingTimeInterval(120)
+        locationService.events = [.location(lastDrivePoint)]
+        await startTracking(sut)
+
+        #expect(sut.currentLocation == nil)
+        #expect(sut.speedText == "—")
+        #expect(sut.speedThresholdText == nil)
+        #expect(sut.activityText == "—")
+        #expect(sut.distanceText == "0 m")
+        #expect(sut.route.isEmpty)
     }
 
     // MARK: Speed

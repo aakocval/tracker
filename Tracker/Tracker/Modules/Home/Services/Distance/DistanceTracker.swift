@@ -51,15 +51,16 @@ struct DistanceTracker {
 extension DistanceTracker {
     @discardableResult
     mutating func add(_ location: CLLocation) -> Outcome {
+        // The first update after starting is often a cached location from earlier.
+        // Checked first so a cached reading is always reported as one, whatever its accuracy.
+        guard location.timestamp >= startDate else { return .ignored(.beforeSessionStart) }
+
         // Core Location reports a negative accuracy when the reading is invalid.
         guard location.horizontalAccuracy >= 0 else { return .ignored(.invalidAccuracy) }
 
         guard location.horizontalAccuracy <= Self.maximumHorizontalAccuracy else {
             return .ignored(.lowAccuracy)
         }
-
-        // The first update after starting is often a cached location from earlier.
-        guard location.timestamp >= startDate else { return .ignored(.beforeSessionStart) }
 
         guard let lastLocation else {
             self.lastLocation = location

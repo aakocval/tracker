@@ -105,17 +105,23 @@ private extension HomeViewModel {
     }
 
     func handleLocation(_ location: CLLocation) {
+        let outcome = distanceTracker?.add(location)
+
+        // Core Location sends its last cached location when updates start, e.g. the end of
+        // the previous trip. It isn't where the user is now, so it mustn't set location, speed or activity.
+        guard outcome != .ignored(.beforeSessionStart) else { return }
+
         currentLocation = location
         speed = speed(of: location)
         previousLocation = location
 
         // Only locations that count towards the distance are drawn on the map.
-        switch distanceTracker?.add(location) {
+        switch outcome {
         case .started, .added:
-          route.append(location.coordinate)
+            route.append(location.coordinate)
 
         case .ignored, nil:
-          break
+            break
         }
     }
 }
