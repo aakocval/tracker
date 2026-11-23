@@ -248,6 +248,41 @@ struct HomeViewModelTests {
         #expect(sut.route.isEmpty)
     }
 
+    @Test("draws the route and counts distance when the first point of a session was a stale fix")
+    func recoversWhenTheFirstPointWasStale() async {
+        let secondReal = CLLocation.test(north: 30, at: 9)
+        locationService.events = [
+            .location(.test(north: 6_000, at: 1)),
+            .location(.test(north: 0, at: 8)),
+            .location(secondReal),
+            .location(.test(north: 60, at: 10)),
+            .location(.test(north: 90, at: 11))
+        ]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.route.count == 3)
+        #expect(sut.route.first?.latitude == secondReal.coordinate.latitude)
+        #expect(sut.distance > 50)
+        #expect(sut.distance < 70)
+    }
+
+    @Test("doesn't work out a speed across a jump")
+    func doesNotWorkOutSpeedAcrossAJump() async {
+        locationService.events = [
+            .location(.test(north: 0, at: 1)),
+            .location(.test(north: 14, at: 11)),
+            .location(.test(north: 5_000, at: 12))
+        ]
+        let sut = makeSUT()
+
+        await startTracking(sut)
+
+        #expect(sut.activity == .walking)
+        #expect(sut.speedThresholdText == nil)
+    }
+
     // MARK: Speed
 
     @Test("shows a dash for speed until there's one")

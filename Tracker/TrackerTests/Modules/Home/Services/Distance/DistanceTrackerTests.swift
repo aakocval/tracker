@@ -101,6 +101,47 @@ struct DistanceTrackerTests {
         #expect(abs(sut.totalDistance - 20) < 0.5)
     }
 
+    @Test("starts again from the new position when the first point was a stale fix")
+    func restartsWhenTheFirstPointWasStale() {
+        var sut = makeSUT()
+        sut.add(.test(north: 5_000, at: 1))
+
+        let firstReal = sut.add(.test(north: 0, at: 8))
+        let secondReal = sut.add(.test(north: 30, at: 9))
+        let thirdReal = sut.add(.test(north: 60, at: 10))
+
+        #expect(firstReal == .ignored(.tooFast))
+        #expect(secondReal == .restarted)
+        #expect(thirdReal == .added)
+        #expect(abs(sut.totalDistance - 30) < 0.5)
+    }
+
+    @Test("keeps ignoring jumps that don't agree with each other")
+    func keepsIgnoringJumpsThatDisagree() {
+        var sut = makeSUT()
+        sut.add(.test(north: 0, at: 1))
+
+        let first = sut.add(.test(north: 1_000, at: 2))
+        let second = sut.add(.test(north: -1_000, at: 3))
+
+        #expect(first == .ignored(.tooFast))
+        #expect(second == .ignored(.tooFast))
+        #expect(sut.totalDistance == 0)
+    }
+
+    @Test("a reading back near the last point cancels a pending jump")
+    func readingNearLastPointCancelsPendingJump() {
+        var sut = makeSUT()
+        sut.add(.test(north: 0, at: 1))
+        sut.add(.test(north: 1_000, at: 2))
+
+        sut.add(.test(north: 2, at: 3))
+        let outcome = sut.add(.test(north: 1_010, at: 4))
+
+        #expect(outcome == .ignored(.tooFast))
+        #expect(sut.totalDistance == 0)
+    }
+
     // MARK: Rejected readings
 
     @Test("ignores locations with invalid accuracy")

@@ -112,12 +112,20 @@ private extension HomeViewModel {
         guard outcome != .ignored(.beforeSessionStart) else { return }
 
         currentLocation = location
-        speed = speed(of: location)
+
+        let isJump = outcome == .ignored(.tooFast) || outcome == .restarted
+        speed = isJump ? reportedSpeed(of: location) ?? speed : speed(of: location)
         previousLocation = location
 
         // Only locations that count towards the distance are drawn on the map.
         switch outcome {
         case .started, .added:
+            route.append(location.coordinate)
+
+        case .restarted:
+            if !route.isEmpty {
+                route.removeLast()
+            }
             route.append(location.coordinate)
 
         case .ignored, nil:
@@ -129,6 +137,10 @@ private extension HomeViewModel {
 // MARK: - Helpers
 
 private extension HomeViewModel {
+    func reportedSpeed(of location: CLLocation) -> CLLocationSpeed? {
+        location.speed >= 0 ? location.speed : nil
+    }
+
     /// Works out speed from the previous update when the device reports none, e.g. in GPX simulation.
     func speed(of location: CLLocation) -> CLLocationSpeed? {
         // Core Location reports -1 when the speed is invalid.

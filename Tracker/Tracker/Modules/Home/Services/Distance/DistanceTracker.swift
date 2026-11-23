@@ -22,6 +22,7 @@ struct DistanceTracker {
     enum Outcome: Equatable {
         case started
         case added
+        case restarted
         case ignored(Reason)
     }
 
@@ -40,6 +41,8 @@ struct DistanceTracker {
 
     /// Only moves when distance is added, so slow walking still adds up over a few updates.
     private(set) var lastLocation: CLLocation?
+
+    private var jumpCandidate: CLLocation?
 
     init(startDate: Date = Date()) {
         self.startDate = startDate
@@ -77,13 +80,42 @@ extension DistanceTracker {
             Self.minimumDistance,
             location.horizontalAccuracy + lastLocation.horizontalAccuracy
         )
-        guard distance > driftThreshold else { return .ignored(.tooSmall) }
+        guard distance > driftThreshold else {
+            jumpCandidate = nil
+            return .ignored(.tooSmall)
+        }
 
-        let seconds = location.timestamp.timeIntervalSince(lastLocation.timestamp)
-        guard distance / seconds <= Self.maximumSpeed else { return .ignored(.tooFast) }
+        guard isPlausibleMove(from: lastLocation, to: location) else {
+            return handleJump(to: location)
+        }
 
         totalDistance += distance
         self.lastLocation = location
+        jumpCandidate = nil
         return .added
+    }
+}
+
+// MARK: - Helpers
+
+private extension DistanceTracker {
+    func isPlausibleMove(
+        from start: CLLocation,
+        to end: CLLocation
+    ) -> Bool {
+        let seconds = end.timestamp.timeIntervalSince(start.timestamp)
+        guard seconds > 0 else { return false }
+        return end.distance(from: start) / seconds <= Self.maximumSpeed
+    }
+
+    mutating func handleJump(to location: CLLocation) -> Outcome {
+        if let jumpCandidate, isPlausibleMove(from: jumpCandidate, to: location) {
+            lastLocation = location
+            self.jumpCandidate = nil
+            return .restarted
+        }
+
+        jumpCandidate = location
+        return .ignored(.tooFast)
     }
 }
