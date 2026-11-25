@@ -113,6 +113,7 @@ About 3 hours.
 3. A GPS accuracy indicator and a weak-signal warning.
 4. Background tracking, for when the courier locks the phone mid-delivery.
 5. Testing on iOS 18 and iOS 26, smaller and larger iPhones, and a real device on an actual walk and drive.
+6. A coordinator to own navigation (splash to Home, the location help sheet, and future screens such as the session summary), so views and view models don't decide where to go next.
 
 ## Tools used
 
